@@ -46,23 +46,55 @@ td{padding:8px 10px;vertical-align:top;color:#111}
 
 <script>
 const fields=[
+  // coda_input
   {g:"coda_input",n:"coda_input",t:"struct",d:"A complex struct containing the raw data imported directly from the Coda source document."},
   {g:"coda_input",n:"coda_input.license_name",t:"string",d:"The original, uncleaned license name as it appears in the Coda input field."},
-  {g:"coda_input",n:"coda_input.brand_titles",t:"string",d:"The raw unstructured text listing the licensed IP titles. May contain multiple titles, season info, or additional notes — not suitable for filtering without parsing."},
+  {g:"coda_input",n:"coda_input.brand_titles",t:"string",d:"The raw unstructured text listing the licensed IP titles. It may contain multiple titles, season info, or additional notes and is generally not suitable for filtering without parsing."},
+
+  // llm_match_quality
   {g:"llm_match_quality",n:"llm_match_quality",t:"struct",d:"Struct field with overall match quality assessment notes and confidence score."},
   {g:"llm_match_quality",n:"llm_match_quality.notes",t:"string",d:"Diagnostic notes and metadata generated during the matching process to explain specific logic or edge cases."},
-  {g:"llm_match_quality",n:"llm_match_quality.confidence",t:"number",d:"A numerical score representing the system's confidence in the overall match."},
+  {g:"llm_match_quality",n:"llm_match_quality.confidence",t:"number",d:"A score representing the system's confidence in the overall match."},
+
+  // llm_matched_brand
   {g:"llm_matched_brand",n:"llm_matched_brand",t:"struct",d:"Struct with details of the matched brandshop, if the LLM found a match in the brandshop list."},
   {g:"llm_matched_brand",n:"llm_matched_brand.license_name",t:"string",d:"License name associated with the brandshop identified by the LLM."},
   {g:"llm_matched_brand",n:"llm_matched_brand.user_id",t:"string",d:"Unique internal user ID of the brandshop identified by the LLM."},
   {g:"llm_matched_brand",n:"llm_matched_brand.name",t:"string",d:"Name of the brandshop identified by the LLM."},
+
+  // matched_collections
   {g:"matched_collections",n:"matched_collections",t:"array",d:"Array of collections matched by combining LLM results with the brandshop collection list."},
   {g:"matched_collections",n:"matched_collections.matched_collection",t:"struct",d:"Struct with details of the matched collection."},
   {g:"matched_collections",n:"matched_collection.id",t:"string",d:"Unique identifier of the matched collection."},
   {g:"matched_collections",n:"matched_collection.name",t:"string",d:"Name of the matched collection."},
   {g:"matched_collections",n:"matched_collections.matched_artworks",t:"array",d:"Array of artworks matched within the matched collection."},
   {g:"matched_collections",n:"matched_artworks.internal_id",t:"string",d:"Unique identifier of the matched artwork."},
+  {g:"matched_collections",n:"matched_artworks.external_id",t:"string",d:"External-facing identifier of the matched artwork as used in public URLs and APIs."},
+  {g:"matched_collections",n:"matched_artworks.is_active",t:"bool",d:"Boolean flag indicating whether the artwork is currently active and visible on the platform."},
+  {g:"matched_collections",n:"matched_artworks.is_active_collection",t:"bool",d:"Boolean flag indicating whether the collection this artwork belongs to is currently active."},
+  {g:"matched_collections",n:"matched_artworks.create_date",t:"date",d:"The date on which the artwork was created in the internal system."},
+  {g:"matched_collections",n:"matched_artworks.activated_date",t:"date",d:"The date on which the artwork was first activated and made available on the platform."},
+  {g:"matched_collections",n:"matched_artworks.delete_date",t:"date",d:"The date on which the artwork was deleted or deactivated. Null if the artwork is still active."},
+  {g:"matched_collections",n:"matched_artworks.url",t:"string",d:"Direct URL to the artwork page on the Displate website."},
+  {g:"matched_collections",n:"matched_artworks.image_url",t:"string",d:"Direct URL to the artwork's image asset used for display purposes."},
   {g:"matched_collections",n:"matched_artworks.title",t:"string",d:"Title of the matched artwork."},
+  {g:"matched_collections",n:"matched_artworks.available_formats",t:"array",d:"Array of available product format structs for this artwork, containing full format details."},
+  {g:"matched_collections",n:"matched_artworks.available_formats.sku",t:"string",d:"Full product SKU for this format variant (e.g. P00106522176)."},
+  {g:"matched_collections",n:"matched_artworks.available_formats.format_name",t:"string",d:'Human-readable Displaio format name for this variant (e.g. "Medium Plate", "Large Plate").'},
+  {g:"matched_collections",n:"matched_artworks.available_formats.format_type",t:"string",d:'Product category type for this variant (e.g. "Poster", "Limited Edition", "Lumino", "Other").'},
+  {g:"matched_collections",n:"matched_artworks.available_formats.item_finish",t:"string",d:'Surface finish for this variant (e.g. "None", "Textra", "Gloss").'},
+  {g:"matched_collections",n:"matched_artworks.available_formats.item_frame",t:"string",d:'Frame option for this variant (e.g. "None", "Black wood pattern").'},
+  {g:"matched_collections",n:"matched_artworks.available_format_names",t:"string",d:'Comma-separated string of distinct product format names available for this artwork (e.g. "Medium Plate, Large Plate").'},
+  {g:"matched_collections",n:"matched_artworks.available_format_types",t:"string",d:'Comma-separated string of distinct product type categories available for this artwork (e.g. "Poster, Limited Edition").'},
+  {g:"matched_collections",n:"matched_artworks.available_item_size_keys",t:"string",d:'Comma-separated string of distinct item size keys available for this artwork (e.g. "M, L").'},
+  {g:"matched_collections",n:"matched_artworks.available_finishes",t:"string",d:'Comma-separated string of distinct finishes available for this artwork (e.g. "None, Textra").'},
+  {g:"matched_collections",n:"matched_artworks.available_frames",t:"string",d:"Comma-separated string of distinct frame options available for this artwork."},
+  {g:"matched_collections",n:"matched_artworks.m_matt_sku",t:"string",d:"SKU for the Medium Matt (standard) product variant of this artwork. Null if not available."},
+  {g:"matched_collections",n:"matched_artworks.l_matt_sku",t:"string",d:"SKU for the Large Matt (standard) product variant of this artwork. Null if not available."},
+  {g:"matched_collections",n:"matched_artworks.m_textra_sku",t:"string",d:"SKU for the Medium Textra (premium finish) product variant of this artwork. Null if not available."},
+  {g:"matched_collections",n:"matched_artworks.l_textra_sku",t:"string",d:"SKU for the Large Textra (premium finish) product variant of this artwork. Null if not available."},
+
+  // is_amazon
   {g:"is_amazon",n:"is_amazon",t:"struct",d:"A struct of boolean flags indicating market-specific sales eligibility for Amazon platforms."},
   {g:"is_amazon",n:"is_amazon.us",t:"bool",d:"Whether the license covers the US Amazon marketplace."},
   {g:"is_amazon",n:"is_amazon.germany",t:"bool",d:"Whether the license covers the German Amazon marketplace."},
@@ -70,17 +102,25 @@ const fields=[
   {g:"is_amazon",n:"is_amazon.france",t:"bool",d:"Whether the license covers the French Amazon marketplace."},
   {g:"is_amazon",n:"is_amazon.italy",t:"bool",d:"Whether the license covers the Italian Amazon marketplace."},
   {g:"is_amazon",n:"is_amazon.spain",t:"bool",d:"Whether the license covers the Spanish Amazon marketplace."},
-  {g:"llm_usage",n:"llm_usage",t:"struct",d:"Struct with token usage broken down by LLM call type. Null when no LLM matching occurred. Brand tokens are always present when a brand was matched; artwork tokens only appear when the artwork-matching call was triggered."},
+  {g:"is_amazon",n:"available_markets",t:"string",d:'Space-separated string of Amazon marketplace codes where the brand is eligible to sell (e.g. "UK US DE FR"). Derived from the is_amazon struct fields. Generated by the concat_amazon_markets macro — add new markets there.'},
+  {g:"is_amazon",n:"amazon_license_comment",t:"string",d:"Free-text comment indicating the Amazon licensing status. Common values include 'YES', 'YES (EMEA)', or 'YES (AFTER APPROVAL)'. This is not a strict boolean and requires interpretation."},
+
+  // llm_usage
+  {g:"llm_usage",n:"llm_usage",t:"struct",d:"Struct with token usage broken down by LLM call type. Null when no LLM matching occurred (e.g. whole-brandshop match with artworks joined by user_id only). Brand tokens are always present when a brand was matched; artwork tokens are only present when the artwork-matching LLM call was triggered."},
   {g:"llm_usage",n:"llm_usage.brand_input_tokens",t:"number",d:"The count of tokens sent in the prompt to the brand-matching model, used for cost and performance tracking."},
   {g:"llm_usage",n:"llm_usage.brand_output_tokens",t:"number",d:"The count of tokens generated by the brand-matching model in its response."},
-  {g:"llm_usage",n:"llm_usage.artwork_input_tokens",t:"number",d:"The count of tokens sent in the prompt to the artwork-matching model. Null if no artwork matching was performed."},
-  {g:"llm_usage",n:"llm_usage.artwork_output_tokens",t:"number",d:"The count of tokens generated by the artwork-matching model. Null if no artwork matching was performed."},
-  {g:"llm_usage",n:"llm_usage.total_input_tokens",t:"number",d:"Total input tokens across both the brand-matching and artwork-matching model calls."},
-  {g:"llm_usage",n:"llm_usage.total_output_tokens",t:"number",d:"Total output tokens across both the brand-matching and artwork-matching model calls."},
+  {g:"llm_usage",n:"llm_usage.artwork_input_tokens",t:"number",d:"The count of tokens sent in the prompt to the artwork-matching model for this record. Null if no artwork matching was performed."},
+  {g:"llm_usage",n:"llm_usage.artwork_output_tokens",t:"number",d:"The count of tokens generated by the artwork-matching model for this record. Null if no artwork matching was performed."},
+  {g:"llm_usage",n:"llm_usage.total_input_tokens",t:"number",d:"Total input tokens across both the brand-matching and artwork-matching model calls for this record."},
+  {g:"llm_usage",n:"llm_usage.total_output_tokens",t:"number",d:"Total output tokens across both the brand-matching and artwork-matching model calls for this record."},
   {g:"llm_usage",n:"llm_usage.total_tokens",t:"number",d:"Total tokens (input + output) consumed across all model calls for this record."},
+
+  // dlt_metadata
   {g:"dlt_metadata",n:"dlt_metadata",t:"struct",d:"Struct containing metadata about the data load process like load_id and inserted_date."},
   {g:"dlt_metadata",n:"dlt_metadata.load_id",t:"string",d:"Unique identifier for the specific Airflow or dbt load batch that processed this record."},
   {g:"dlt_metadata",n:"dlt_metadata.inserted_date",t:"date",d:"The date indicating when the record was persisted into the database."},
+
+  // status_info
   {g:"status_info",n:"status_info",t:"struct",d:"Struct containing the operational status of the matched brandshop, sourced from the authors table."},
   {g:"status_info",n:"status_info.is_active",t:"bool",d:"Boolean flag indicating whether the brandshop is currently active."},
   {g:"status_info",n:"status_info.opening_date",t:"date",d:"The date on which the brandshop was opened."},
