@@ -7,15 +7,15 @@ body{font-family:var(--font-sans,system-ui,sans-serif)}
 .filter-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1.25rem}
 .chip{font-size:12px;padding:4px 12px;border-radius:20px;border:0.5px solid #ccc;cursor:pointer;background:#f5f5f5;color:#555;transition:all .15s}
 .chip.active{background:#fff;color:#111;border-color:#888;font-weight:500}
-table{width:100%;border-collapse:collapse;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
 thead th{text-align:left;font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.05em;padding:6px 10px;border-bottom:0.5px solid #e5e5e5}
 .section-header td{background:#f9f9f9;padding:8px 10px;font-weight:500;font-size:12px;color:#666;border-bottom:0.5px solid #e5e5e5;letter-spacing:.03em}
 tr.field-row{border-bottom:0.5px solid #e5e5e5}
 tr.field-row:hover td{background:#fafafa}
 td{padding:8px 10px;vertical-align:top;color:#111}
-.col-path{font-family:monospace;font-size:12px;color:#555;white-space:nowrap}
-.col-name{font-family:monospace;font-size:12px;white-space:nowrap}
-.col-desc{color:#555;line-height:1.5}
+.col-name{font-family:monospace;font-size:12px;width:32%;word-break:break-all}
+.col-type{width:10%}
+.col-desc{color:#555;line-height:1.6}
 .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500;white-space:nowrap}
 .badge-struct{background:#EEEDFE;color:#3C3489}
 .badge-array{background:#E1F5EE;color:#085041}
@@ -28,15 +28,14 @@ td{padding:8px 10px;vertical-align:top;color:#111}
 </style>
 <div class="wrap">
 <div class="search-bar">
-  <input type="text" id="search" placeholder="Search fields, paths, descriptions…" oninput="render()">
+  <input type="text" id="search" placeholder="Search fields or descriptions…" oninput="render()">
   <span class="count" id="count"></span>
 </div>
 <div class="filter-row" id="filters"></div>
 <table>
   <thead>
     <tr>
-      <th style="width:22%">Field name</th>
-      <th style="width:26%">Field path</th>
+      <th style="width:32%">Field name</th>
       <th style="width:10%">Type</th>
       <th>Description</th>
     </tr>
@@ -47,45 +46,45 @@ td{padding:8px 10px;vertical-align:top;color:#111}
 
 <script>
 const fields=[
-  {g:"coda_input",n:"coda_input",p:"coda_input",t:"struct",d:"A complex struct containing the raw data imported directly from the Coda source document."},
-  {g:"coda_input",n:"coda_input.license_name",p:"coda_input.license_name",t:"string",d:"The original, uncleaned license name as it appears in the Coda input field."},
-  {g:"coda_input",n:"coda_input.brand_titles",p:"coda_input.brand_titles",t:"string",d:"The raw unstructured text listing the licensed IP titles. May contain multiple titles, season info, or additional notes — not suitable for filtering without parsing."},
-  {g:"llm_match_quality",n:"llm_match_quality",p:"llm_match_quality",t:"struct",d:"Struct field with overall match quality assessment notes and confidence score."},
-  {g:"llm_match_quality",n:"llm_match_quality.notes",p:"llm_match_quality.notes",t:"string",d:"Diagnostic notes and metadata generated during the matching process to explain specific logic or edge cases."},
-  {g:"llm_match_quality",n:"llm_match_quality.confidence",p:"llm_match_quality.confidence",t:"number",d:"A numerical score representing the system's confidence in the overall match."},
-  {g:"llm_matched_brand",n:"llm_matched_brand",p:"llm_matched_brand",t:"struct",d:"Struct with details of the matched brandshop, if the LLM found a match in the brandshop list."},
-  {g:"llm_matched_brand",n:"llm_matched_brand.license_name",p:"llm_matched_brand.license_name",t:"string",d:"License name associated with the brandshop identified by the LLM."},
-  {g:"llm_matched_brand",n:"llm_matched_brand.user_id",p:"llm_matched_brand.user_id",t:"string",d:"Unique internal user ID of the brandshop identified by the LLM."},
-  {g:"llm_matched_brand",n:"llm_matched_brand.name",p:"llm_matched_brand.name",t:"string",d:"Name of the brandshop identified by the LLM."},
-  {g:"matched_collections",n:"matched_collections",p:"matched_collections",t:"array",d:"Array of collections matched by combining LLM results with the brandshop collection list."},
-  {g:"matched_collections",n:"matched_collections.matched_collection",p:"matched_collections.matched_collection",t:"struct",d:"Struct with details of the matched collection."},
-  {g:"matched_collections",n:"matched_collection.id",p:"matched_collections.matched_collection.id",t:"string",d:"Unique identifier of the matched collection."},
-  {g:"matched_collections",n:"matched_collection.name",p:"matched_collections.matched_collection.name",t:"string",d:"Name of the matched collection."},
-  {g:"matched_collections",n:"matched_collections.matched_artworks",p:"matched_collections.matched_artworks",t:"array",d:"Array of artworks matched within the matched collection."},
-  {g:"matched_collections",n:"matched_artworks.internal_id",p:"matched_collections.matched_artworks.internal_id",t:"string",d:"Unique identifier of the matched artwork."},
-  {g:"matched_collections",n:"matched_artworks.title",p:"matched_collections.matched_artworks.title",t:"string",d:"Title of the matched artwork."},
-  {g:"is_amazon",n:"is_amazon",p:"is_amazon",t:"struct",d:"A struct of boolean flags indicating market-specific sales eligibility for Amazon platforms."},
-  {g:"is_amazon",n:"is_amazon.us",p:"is_amazon.us",t:"bool",d:"Whether the license covers the US Amazon marketplace."},
-  {g:"is_amazon",n:"is_amazon.germany",p:"is_amazon.germany",t:"bool",d:"Whether the license covers the German Amazon marketplace."},
-  {g:"is_amazon",n:"is_amazon.uk",p:"is_amazon.uk",t:"bool",d:"Whether the license covers the UK Amazon marketplace."},
-  {g:"is_amazon",n:"is_amazon.france",p:"is_amazon.france",t:"bool",d:"Whether the license covers the French Amazon marketplace."},
-  {g:"is_amazon",n:"is_amazon.italy",p:"is_amazon.italy",t:"bool",d:"Whether the license covers the Italian Amazon marketplace."},
-  {g:"is_amazon",n:"is_amazon.spain",p:"is_amazon.spain",t:"bool",d:"Whether the license covers the Spanish Amazon marketplace."},
-  {g:"llm_usage",n:"llm_usage",p:"llm_usage",t:"struct",d:"Struct with token usage broken down by LLM call type. Null when no LLM matching occurred. Brand tokens are always present when a brand was matched; artwork tokens only appear when the artwork-matching call was triggered."},
-  {g:"llm_usage",n:"llm_usage.brand_input_tokens",p:"llm_usage.brand_input_tokens",t:"number",d:"The count of tokens sent in the prompt to the brand-matching model, used for cost and performance tracking."},
-  {g:"llm_usage",n:"llm_usage.brand_output_tokens",p:"llm_usage.brand_output_tokens",t:"number",d:"The count of tokens generated by the brand-matching model in its response."},
-  {g:"llm_usage",n:"llm_usage.artwork_input_tokens",p:"llm_usage.artwork_input_tokens",t:"number",d:"The count of tokens sent in the prompt to the artwork-matching model. Null if no artwork matching was performed."},
-  {g:"llm_usage",n:"llm_usage.artwork_output_tokens",p:"llm_usage.artwork_output_tokens",t:"number",d:"The count of tokens generated by the artwork-matching model. Null if no artwork matching was performed."},
-  {g:"llm_usage",n:"llm_usage.total_input_tokens",p:"llm_usage.total_input_tokens",t:"number",d:"Total input tokens across both the brand-matching and artwork-matching model calls."},
-  {g:"llm_usage",n:"llm_usage.total_output_tokens",p:"llm_usage.total_output_tokens",t:"number",d:"Total output tokens across both the brand-matching and artwork-matching model calls."},
-  {g:"llm_usage",n:"llm_usage.total_tokens",p:"llm_usage.total_tokens",t:"number",d:"Total tokens (input + output) consumed across all model calls for this record."},
-  {g:"dlt_metadata",n:"dlt_metadata",p:"dlt_metadata",t:"struct",d:"Struct containing metadata about the data load process like load_id and inserted_date."},
-  {g:"dlt_metadata",n:"dlt_metadata.load_id",p:"dlt_metadata.load_id",t:"string",d:"Unique identifier for the specific Airflow or dbt load batch that processed this record."},
-  {g:"dlt_metadata",n:"dlt_metadata.inserted_date",p:"dlt_metadata.inserted_date",t:"date",d:"The date indicating when the record was persisted into the database."},
-  {g:"status_info",n:"status_info",p:"status_info",t:"struct",d:"Struct containing the operational status of the matched brandshop, sourced from the authors table."},
-  {g:"status_info",n:"status_info.is_active",p:"status_info.is_active",t:"bool",d:"Boolean flag indicating whether the brandshop is currently active."},
-  {g:"status_info",n:"status_info.opening_date",p:"status_info.opening_date",t:"date",d:"The date on which the brandshop was opened."},
-  {g:"status_info",n:"status_info.closure_date",p:"status_info.closure_date",t:"date",d:"The date on which the brandshop was closed. Null if the brandshop is still active."},
+  {g:"coda_input",n:"coda_input",t:"struct",d:"A complex struct containing the raw data imported directly from the Coda source document."},
+  {g:"coda_input",n:"coda_input.license_name",t:"string",d:"The original, uncleaned license name as it appears in the Coda input field."},
+  {g:"coda_input",n:"coda_input.brand_titles",t:"string",d:"The raw unstructured text listing the licensed IP titles. May contain multiple titles, season info, or additional notes — not suitable for filtering without parsing."},
+  {g:"llm_match_quality",n:"llm_match_quality",t:"struct",d:"Struct field with overall match quality assessment notes and confidence score."},
+  {g:"llm_match_quality",n:"llm_match_quality.notes",t:"string",d:"Diagnostic notes and metadata generated during the matching process to explain specific logic or edge cases."},
+  {g:"llm_match_quality",n:"llm_match_quality.confidence",t:"number",d:"A numerical score representing the system's confidence in the overall match."},
+  {g:"llm_matched_brand",n:"llm_matched_brand",t:"struct",d:"Struct with details of the matched brandshop, if the LLM found a match in the brandshop list."},
+  {g:"llm_matched_brand",n:"llm_matched_brand.license_name",t:"string",d:"License name associated with the brandshop identified by the LLM."},
+  {g:"llm_matched_brand",n:"llm_matched_brand.user_id",t:"string",d:"Unique internal user ID of the brandshop identified by the LLM."},
+  {g:"llm_matched_brand",n:"llm_matched_brand.name",t:"string",d:"Name of the brandshop identified by the LLM."},
+  {g:"matched_collections",n:"matched_collections",t:"array",d:"Array of collections matched by combining LLM results with the brandshop collection list."},
+  {g:"matched_collections",n:"matched_collections.matched_collection",t:"struct",d:"Struct with details of the matched collection."},
+  {g:"matched_collections",n:"matched_collection.id",t:"string",d:"Unique identifier of the matched collection."},
+  {g:"matched_collections",n:"matched_collection.name",t:"string",d:"Name of the matched collection."},
+  {g:"matched_collections",n:"matched_collections.matched_artworks",t:"array",d:"Array of artworks matched within the matched collection."},
+  {g:"matched_collections",n:"matched_artworks.internal_id",t:"string",d:"Unique identifier of the matched artwork."},
+  {g:"matched_collections",n:"matched_artworks.title",t:"string",d:"Title of the matched artwork."},
+  {g:"is_amazon",n:"is_amazon",t:"struct",d:"A struct of boolean flags indicating market-specific sales eligibility for Amazon platforms."},
+  {g:"is_amazon",n:"is_amazon.us",t:"bool",d:"Whether the license covers the US Amazon marketplace."},
+  {g:"is_amazon",n:"is_amazon.germany",t:"bool",d:"Whether the license covers the German Amazon marketplace."},
+  {g:"is_amazon",n:"is_amazon.uk",t:"bool",d:"Whether the license covers the UK Amazon marketplace."},
+  {g:"is_amazon",n:"is_amazon.france",t:"bool",d:"Whether the license covers the French Amazon marketplace."},
+  {g:"is_amazon",n:"is_amazon.italy",t:"bool",d:"Whether the license covers the Italian Amazon marketplace."},
+  {g:"is_amazon",n:"is_amazon.spain",t:"bool",d:"Whether the license covers the Spanish Amazon marketplace."},
+  {g:"llm_usage",n:"llm_usage",t:"struct",d:"Struct with token usage broken down by LLM call type. Null when no LLM matching occurred. Brand tokens are always present when a brand was matched; artwork tokens only appear when the artwork-matching call was triggered."},
+  {g:"llm_usage",n:"llm_usage.brand_input_tokens",t:"number",d:"The count of tokens sent in the prompt to the brand-matching model, used for cost and performance tracking."},
+  {g:"llm_usage",n:"llm_usage.brand_output_tokens",t:"number",d:"The count of tokens generated by the brand-matching model in its response."},
+  {g:"llm_usage",n:"llm_usage.artwork_input_tokens",t:"number",d:"The count of tokens sent in the prompt to the artwork-matching model. Null if no artwork matching was performed."},
+  {g:"llm_usage",n:"llm_usage.artwork_output_tokens",t:"number",d:"The count of tokens generated by the artwork-matching model. Null if no artwork matching was performed."},
+  {g:"llm_usage",n:"llm_usage.total_input_tokens",t:"number",d:"Total input tokens across both the brand-matching and artwork-matching model calls."},
+  {g:"llm_usage",n:"llm_usage.total_output_tokens",t:"number",d:"Total output tokens across both the brand-matching and artwork-matching model calls."},
+  {g:"llm_usage",n:"llm_usage.total_tokens",t:"number",d:"Total tokens (input + output) consumed across all model calls for this record."},
+  {g:"dlt_metadata",n:"dlt_metadata",t:"struct",d:"Struct containing metadata about the data load process like load_id and inserted_date."},
+  {g:"dlt_metadata",n:"dlt_metadata.load_id",t:"string",d:"Unique identifier for the specific Airflow or dbt load batch that processed this record."},
+  {g:"dlt_metadata",n:"dlt_metadata.inserted_date",t:"date",d:"The date indicating when the record was persisted into the database."},
+  {g:"status_info",n:"status_info",t:"struct",d:"Struct containing the operational status of the matched brandshop, sourced from the authors table."},
+  {g:"status_info",n:"status_info.is_active",t:"bool",d:"Boolean flag indicating whether the brandshop is currently active."},
+  {g:"status_info",n:"status_info.opening_date",t:"date",d:"The date on which the brandshop was opened."},
+  {g:"status_info",n:"status_info.closure_date",t:"date",d:"The date on which the brandshop was closed. Null if the brandshop is still active."},
 ];
 
 const groups=[...new Set(fields.map(f=>f.g))];
@@ -114,21 +113,21 @@ function render(){
   let shown=0,lastGroup=null;
   fields.forEach(f=>{
     if(activeGroup&&f.g!==activeGroup)return;
-    if(q&&![f.n,f.p,f.d,f.g].join(" ").toLowerCase().includes(q))return;
+    if(q&&![f.n,f.t,f.d,f.g].join(" ").toLowerCase().includes(q))return;
     if(f.g!==lastGroup){
       const tr=document.createElement("tr");
       tr.className="section-header";
-      tr.innerHTML=`<td colspan="4">${f.g.replace(/_/g," ")}</td>`;
+      tr.innerHTML=`<td colspan="3">${f.g.replace(/_/g," ")}</td>`;
       tbody.appendChild(tr);
       lastGroup=f.g;
     }
     const tr=document.createElement("tr");
     tr.className="field-row";
-    tr.innerHTML=`<td class="col-name">${f.n}</td><td class="col-path">${f.p}</td><td>${typeBadge(f.t)}</td><td class="col-desc">${f.d}</td>`;
+    tr.innerHTML=`<td class="col-name">${f.n}</td><td class="col-type">${typeBadge(f.t)}</td><td class="col-desc">${f.d}</td>`;
     tbody.appendChild(tr);
     shown++;
   });
-  if(!shown)tbody.innerHTML=`<tr><td colspan="4" class="empty">No fields match your search.</td></tr>`;
+  if(!shown)tbody.innerHTML=`<tr><td colspan="3" class="empty">No fields match your search.</td></tr>`;
   document.getElementById("count").textContent=`${shown} field${shown!==1?"s":""}`;
 }
 
